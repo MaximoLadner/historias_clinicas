@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Historias Clínicas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+      <h2>📋 Sistema de Historias Clínicas</h2>
+      
+      <div class="form-section">
+          <div class="input-group">
+              <input id="nombre" placeholder="Nombre del paciente" required>
+              <input id="dni" placeholder="DNI" type="number" required>
+              <input id="fecha" placeholder="Fecha" type="date" required>
+              <input id="diagnostico" placeholder="Diagnóstico" required>
+              <input id="tratamiento" placeholder="Tratamiento" required>
+              <input id="obra_social" placeholder="Obra social" required>
+          </div>
+          
+          <div class="button-group">
+              <button class="btn-primary" onclick="guardar()">💾 Guardar</button>
+              <button class="btn-secondary" onclick="limpiar()">🧹 Limpiar</button>
+          </div>
+      </div>
+
+      <!-- NUEVA SECCIÓN PARA BUSCAR SÍNTOMAS -->
+<div class="search-section">
+  <input id="sintomaBusqueda" placeholder="🔍 Buscar síntomas (ej: migraña)">
+  <button onclick="buscarSintomas()">Buscar en Google</button>
+</div>
+
+      <div class="search-section">
+          <input id="filtro" placeholder="🔍 Buscar por nombre, DNI o fecha" oninput="listar()">
+      </div>
+
+      <h3>📂 Historias Clínicas Registradas</h3>
+      <div class="table-container">
+          <table id="tabla">
+              <thead>
+                  <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>DNI</th>
+                      <th>Fecha</th>
+                      <th>Diagnóstico</th>
+                      <th>Tratamiento</th>
+                      <th>Obra Social</th>
+                      <th>Acciones</th>
+                  </tr>
+              </thead>
+              <tbody></tbody>
+          </table>
+      </div>
+  </div>
+
+  <script>
+    let editandoID = null;
+
+function limpiar() {
+  document.getElementById("nombre").value = "";
+  document.getElementById("dni").value = "";
+  document.getElementById("fecha").value = "";
+  document.getElementById("diagnostico").value = "";
+  document.getElementById("tratamiento").value = "";
+  document.getElementById("obra_social").value = "";
+  editandoID = null;
+}
+
+function guardar() {
+    const nombre = document.getElementById("nombre").value.trim();
+    const dni = document.getElementById("dni").value.trim();
+    const fecha = document.getElementById("fecha").value.trim();
+    const diagnostico = document.getElementById("diagnostico").value.trim();
+    const tratamiento = document.getElementById("tratamiento").value.trim();
+    const obra_social = document.getElementById("obra_social").value.trim();
+
+    // Verificar si alguno de los campos está vacío
+    if (!nombre || !dni || !fecha || !diagnostico || !tratamiento || !obra_social) {
+        alert("Por favor completa todos los campos.");
+        return;  // Detener la ejecución si algún campo está vacío
+    }
+
+    const data = {
+        nombre,
+        dni,
+        fecha,
+        diagnostico,
+        tratamiento,
+        obra_social
+    };
+
+    const url = editandoID ? `http://127.0.0.1:5000/historia/${editandoID}` : "http://127.0.0.1:5000/historia";
+    const metodo = editandoID ? "PUT" : "POST";
+
+    fetch(url, {
+        method: metodo,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    }).then(() => {
+        limpiar();
+        listar();
+    });
+}
+
+
+function listar() {
+  const filtro = document.getElementById("filtro").value;
+  fetch(`http://127.0.0.1:5000/historias?filtro=${filtro}`)
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.querySelector("#tabla tbody");
+      tbody.innerHTML = "";
+      data.forEach(([id, nombre, dni, fecha, diag, trat,obrso]) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${id}</td>
+            <td>${nombre}</td>
+            <td>${dni}</td>
+            <td>${fecha}</td>
+            <td>${diag}</td>
+            <td>${trat}</td>
+            <td>${obrso}</td>
+            <td>
+              <button onclick='cargarEditar(${id}, "${nombre}", "${dni}", "${fecha}", "${diag}", "${trat}", "${obrso}")'>Editar</button>
+              <button onclick='eliminar(${id})'>Eliminar</button>
+            </td>
+          </tr>`;
+      });
+    });
+}
+
+function cargarEditar(id, nombre, dni, fecha, diag, trat, obrso) {
+  document.getElementById("nombre").value = nombre;
+  document.getElementById("dni").value = dni;
+  document.getElementById("fecha").value = fecha;
+  document.getElementById("diagnostico").value = diag;
+  document.getElementById("tratamiento").value = trat;
+  document.getElementById("obra_social").value = obrso;
+  editandoID = id;
+  window.scrollTo({
+    top: document.querySelector(".form-section").offsetTop,
+    behavior: 'smooth'
+  });
+}
+
+function eliminar(id) {
+  fetch(`http://127.0.0.1:5000/historia/${id}`, { method: "DELETE" })
+    .then(() => listar());
+}
+
+listar();
+
+
+function buscarSintomas() {
+  const termino = document.getElementById("sintomaBusqueda").value.trim();
+  if (termino) {
+    const url = `https://www.google.com/search?q=síntomas+de+${encodeURIComponent(termino)}`;
+    window.open(url, '_blank', 'width=800,height=600');
+  }
+}
+  </script>
+</body>
+</html>
